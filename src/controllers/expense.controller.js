@@ -1,7 +1,9 @@
 const Expense = require("../models/expense.model");
+const mongoose = require("mongoose");
 
 exports.createExpense = async (req, res) => {
   try {
+    const userId = req.user.id;
     const { title, amount, category, spendDate, notes } = req.body;
 
     if (!title || !amount || !category || !spendDate) {
@@ -11,6 +13,7 @@ exports.createExpense = async (req, res) => {
     }
 
     const expense = new Expense({
+      user: userId,
       title,
       amount,
       category,
@@ -30,15 +33,34 @@ exports.createExpense = async (req, res) => {
 exports.updateExpense = async (req, res) => {
   try {
     const { id } = req.params;
-
+    const userId = req.user.id;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Valid ID is required" });
     }
 
-    const updated = await Expense.findByIdAndUpdate(id, req.body, {
-      new: true,
-      runValidators: true,
+    const allowedUpdates = [
+      "title",
+      "amount",
+      "category",
+      "spendDate",
+      "notes",
+    ];
+    const updates = {};
+
+    allowedUpdates.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        updates[field] = req.body[field];
+      }
     });
+
+    const updated = await Expense.findByIdAndUpdate(
+      { _id: id, user: userId },
+      updates,
+      {
+        new: true,
+        runValidators: true,
+      }
+    );
 
     if (!updated) {
       return res.status(404).json({ message: "Expense not found" });
@@ -59,12 +81,12 @@ exports.updateExpense = async (req, res) => {
 exports.deleteExpense = async (req, res) => {
   try {
     const { id } = req.params;
-
+    const userId = req.user.id;
     if (!id || !mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: "Valid ID is required" });
     }
 
-    const deleted = await Expense.findByIdAndDelete(id);
+    const deleted = await Expense.findByIdAndDelete({ user: userId, _id: id });
 
     if (!deleted) {
       return res.status(404).json({ message: "Expense not found" });
@@ -84,6 +106,7 @@ exports.deleteExpense = async (req, res) => {
 
 exports.getExpense = async (req, res) => {
   try {
+    const userId = req.user.id;
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
 
@@ -94,8 +117,10 @@ exports.getExpense = async (req, res) => {
     }
 
     const skip = (page - 1) * limit;
-    const totalCount = await Expense.countDocuments();
-    const totalExpense = await Expense.find()
+    const totalCount = await Expense.countDocuments({ user: userId });
+    const totalExpense = await Expense.find({
+      user: userId,
+    })
       .sort({ spendDate: -1 })
       .skip(skip)
       .limit(limit);

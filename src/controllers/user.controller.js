@@ -41,13 +41,12 @@ exports.createUser = async (req, res) => {
 
 exports.updateUser = async (req, res) => {
   try {
-    const { id } = req.params;
-
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    const userId = req.user.id;
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Valid ID is required" });
     }
 
-    const updated = await User.findByIdAndUpdate(id, req.body, {
+    const updated = await User.findByIdAndUpdate(userId, req.body, {
       new: true,
       runValidators: true,
     });
@@ -70,13 +69,13 @@ exports.updateUser = async (req, res) => {
 
 exports.deleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
+    const userId = req.user.id;
 
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+    if (!userId || !mongoose.Types.ObjectId.isValid(userId)) {
       return res.status(400).json({ message: "Valid ID is required" });
     }
 
-    const deleted = await User.findByIdAndDelete(id);
+    const deleted = await User.findByIdAndDelete(userId);
 
     if (!deleted) {
       return res.status(404).json({ message: "User not found" });
@@ -96,6 +95,7 @@ exports.deleteUser = async (req, res) => {
 
 exports.loginUser = async (req, res) => {
   try {
+    console.log("req", req.headers);
     const { email, password } = req.body;
     if (!email || !password) {
       return res.status(400).json({
