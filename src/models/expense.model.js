@@ -34,4 +34,8 @@ const expenseSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+expenseSchema.index({ user: 1, title: 1 });
+expenseSchema.index({ user: 1, category: 1 });
+expenseSchema.index({ user: 1, spendDate: 1 });
+expenseSchema.index({ user: 1, createdAt: -1 });
 module.exports = mongoose.model("Expense", expenseSchema);
